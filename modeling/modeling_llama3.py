@@ -10,7 +10,7 @@ def llama3_weight_load_size(args, input_len=1):
     """
     batch_size = args.batch_size
     loop = math.ceil(input_len * batch_size / args.MM_START_M_NUMBER)
-    assert loop == 1, "loop should be 1, because we only care about the decode stage."
+    # assert loop == 1, "loop should be 1, because we only care about the decode stage."
     bit = args.weight_bit
     hidden_size = args.hidden_size
     intermediate_size = args.intermediate_size
@@ -135,7 +135,7 @@ def llama3_cycles_comp(args, input_len, kv_len):
     ld_cycle = (ld_weight_cycle + ld_act_cycle)
 
     # ST
-    act_size = llama3_act_st_size(args, input_len)
+    act_size = llama3_act_st_size(args, input_len, kv_len)
     st_cycle = act_size / (hbm_trans_compatibility * args.num_narrow_channels / args.num_hbm_channels * args.hbm_same_uti)
 
     # MM/MV
