@@ -46,19 +46,19 @@ def llama3_act_load_size(args, input_len, kv_len=0):
     act_size += input_len * hidden_size * 3                                     # q, k, v 的输入
     act_size += hidden_size * kv_len * 2 * kv_scale                             # kv cache加载
     act_size += input_len * hidden_size * (1 + kv_scale)                        # qkt_matmul
-    act_size += (input_len * input_len * num_heads + input_len * hidden_size * kv_scale)    # pv_matmul
+    act_size += (input_len * (input_len+kv_len) * num_heads + input_len * hidden_size * kv_scale)    # pv_matmul
     act_size += input_len *  hidden_size * 2                                    # o_proj and residual
     act_size += input_len * hidden_size                                         # post_layernorm
     act_size += input_len * hidden_size                                         # gate_proj
     act_size += input_len * hidden_size + input_len * intermediate_size         # up_proj
     act_size += (input_len * intermediate_size + input_len * hidden_size)       # down_proj and residual
 
-    act_size *= num_layers                                                    # 32 layers
+    act_size *= num_layers                                                      # 32 layers
     act_size += input_len * hidden_size                                         # norm
     act_size += input_len * hidden_size                                         # lm_head
 
-    act_size *= batch_size                                                     # batch size
-    act_size *= (bit / 8)                                                    # byte
+    act_size *= batch_size                                                      # batch size
+    act_size *= (bit / 8)                                                       # byte
     return act_size
 
 
@@ -80,7 +80,7 @@ def llama3_act_st_size(args, input_len, kv_len):
 
     act_size  = input_len * hidden_size                                         # layer norm
     act_size += input_len * hidden_size * (1 + 2 * kv_scale)                    # qkv
-    act_size += input_len * kv_len * num_heads                               # qkt_matmul
+    act_size += input_len * kv_len * num_heads                                  # qkt_matmul
     act_size += input_len * hidden_size                                         # pv_matmul
     act_size += input_len * hidden_size                                         # o_proj
     act_size += input_len * hidden_size                                         # post_layernorm

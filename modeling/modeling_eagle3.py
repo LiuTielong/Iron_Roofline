@@ -1,6 +1,12 @@
 """
 EAGLE3 for llama-3.1-8B 模型的仿真器建模。
 注意: 一定要支持长文本的kv cache, 要支持多batch.
+小模型的结构：
+1. embedding层和lm_head层都和大模型共用。
+2. 一个fc层，负责将大模型的三层隐状态[batch_size, input_len, hidden_dim*3] 映射成[batch_size, input_len, hidden_dim]. 这个fc层只有在创建
+draft token tree的第一层节点时用到。
+3. 一个llama_decoder_layer. 但是和正常的decoder_layer有区别的是：它的输入是: [batch_size, input_len, hidden_dim*2], 然后经过
+两个宽度都是4096的layernorm。接下来经过q_proj, k_proj, v_proj（这三个权重矩阵的输入维度都是8192，输出维度分别是4096,1024,1024）。后面就正常了。
 """
 
 import math
@@ -52,7 +58,7 @@ def eagle3_act_load_size(args, input_len, kv_len, first_layer:bool):
     act_size += input_len * (hidden_size * 2) * 3                                   # q, k, v的输入
     act_size += hidden_size * kv_len * 2 * kv_scale                                 # kv cache加载
     act_size += input_len * hidden_size * (1 + kv_scale)                            # qkt_matmul
-    act_size += (input_len * input_len * num_heads + input_len * hidden_size * kv_scale)  # pv_matmul
+    act_size += (input_len * (input_len+kv_len) * num_heads + input_len * hidden_size * kv_scale)  # pv_matmul
     act_size += input_len * hidden_size * 2                                         # o_proj and residual
     act_size += input_len * hidden_size                                             # post_layernorm
     act_size += input_len * hidden_size                                             # gate_proj
