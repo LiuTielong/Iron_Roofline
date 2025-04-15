@@ -2,12 +2,13 @@ import math
 import argparse
 import numpy as np
 
-def llm_weight_load_size(args, input_len=1, batch_size=1):
+def llama3_weight_load_size(args, input_len=1):
     """
     针对的target model: llama-3.1-8B.
     一个问题: 权重到底要不要加载很多次？
     回答: 不重要。因为我关注的都是decode阶段, input_len是一个比较小的数(gamma). 就算是batch size=128这么大, 权重也只需要加载一次。
     """
+    batch_size = args.batch_size
     loop = math.ceil(input_len * batch_size / args.MM_START_M_NUMBER)
     assert loop == 1, "loop should be 1, because we only care about the decode stage."
     bit = args.weight_bit
@@ -26,7 +27,7 @@ def llm_weight_load_size(args, input_len=1, batch_size=1):
     param_size *= (bit / 8)                                                     # byte
     return param_size
 
-def llm_act_load_size(args, input_len, kv_len=0):
+def llama3_act_load_size(args, input_len, kv_len=0):
     """
     针对的target model: llama-3.1-8B.
     对于我考虑的情况, 虽然都是decode阶段, 但是input_len不为0, 而是一个比较小的数(因为target model在做verify).
@@ -61,7 +62,7 @@ def llm_act_load_size(args, input_len, kv_len=0):
     return act_size
 
 
-def llm_act_st_size(args, input_len):
+def llama3_act_st_size(args, input_len):
     """
     Description:
         Compute the size of storing activations.
@@ -92,7 +93,7 @@ def llm_act_st_size(args, input_len):
     act_size *= (bit / 8)
     return act_size
 
-def llm_mm_comp(args, input_len, kv_len):
+def llama3_mm_comp(args, input_len, kv_len):
     """
     计算矩阵矩阵乘、矩阵向量乘的时间。
     对于magicdec, 还是要兼顾一下大模型和小模型。
@@ -110,9 +111,10 @@ def llm_mm_comp(args, input_len, kv_len):
 
     computation = 0
     kv_len = input_len + kv_len
-    computation += input_len * hidden_size * hidden_size * 2                # q_proj, o_proj
+    computation += input_len * hidden_size * hidden_size                    # q_proj, o_proj
     computation += input_len * hidden_size * (hidden_size * kv_scale) * 2   # k_proj, v_proj
     computation += input_len * kv_len * hidden_size * 2                     # qkt_matmul, pv_matmul
+    computation += input_len * hidden_size * hidden_size                    # o_proj
     computation += input_len * hidden_size * intermediate_size * 3          # up_proj, gate_proj, down_proj
     
     computation *= num_layers
@@ -120,27 +122,28 @@ def llm_mm_comp(args, input_len, kv_len):
     computation *= batch_size
     return computation
 
-def LLM_cycles_comp(args, input_len, kv_len):
+def llama3_cycles_comp(args, input_len, kv_len):
     # LD
     hbm_trans_compatibility = args.hbm_bandwidth * (1.024**3) * 1000 / args.clock_frequency # how many bytes can be transferred in one cycle.
-    weight_size = llm_weight_load_size(args, input_len)
+    weight_size = llama3_weight_load_size(args, input_len)
     ld_weight_cycle = weight_size / (hbm_trans_compatibility * args.num_wide_channels / args.num_hbm_channels * args.hbm_same_uti)
 
-    act_size = llm_act_load_size(args, input_len, kv_len)
+    act_size = llama3_act_load_size(args, input_len, kv_len)
     ld_act_cycle = act_size / (hbm_trans_compatibility * args.num_narrow_channels / args.num_hbm_channels * args.hbm_cross_uti)
 
     ld_cycle = (ld_weight_cycle + ld_act_cycle)
 
     # ST
-    act_size = llm_act_st_size(args, input_len)
+    act_size = llama3_act_st_size(args, input_len)
     st_cycle = act_size / (hbm_trans_compatibility * args.num_narrow_channels / args.num_hbm_channels * args.hbm_same_uti)
 
     # MM/MV
-    computation = llm_mm_comp(args, input_len, kv_len)
-    if input_len != 1:
-        comp_cycle = computation / (args.mm_parallel_m * args.mm_parallel_n * args.mm_parallel_k * args.num_slr)
-    else:
-        comp_cycle = computation / (args.mv_parallel_m * args.mv_parallel_n * args.mv_parallel_k * args.num_slr)
+    computation = llama3_mm_comp(args, input_len, kv_len)
+    comp_cycle = computation / (args.mm_parallel_m * args.mm_parallel_n * args.mm_parallel_k * args.num_slr)  # 算力直接拉满
+    # if input_len != 1:
+    #     comp_cycle = computation / (args.mm_parallel_m * args.mm_parallel_n * args.mm_parallel_k * args.num_slr)
+    # else:
+    #     comp_cycle = computation / (args.mv_parallel_m * args.mv_parallel_n * args.mv_parallel_k * args.num_slr)
     
     # FUSE
     fused_cycle = max(ld_cycle, st_cycle, comp_cycle)
