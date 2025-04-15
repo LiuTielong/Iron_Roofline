@@ -131,7 +131,7 @@ def eagle2_cycles_comp(args, input_len, kv_len):
     ld_cycle = (ld_weight_cycle + ld_act_cycle)
 
     # ST
-    act_size = eagle2_act_st_size(args, input_len)
+    act_size = eagle2_act_st_size(args, input_len, kv_len)
     st_cycle = act_size / (hbm_trans_compatibility * args.num_narrow_channels / args.num_hbm_channels * args.hbm_same_uti)
 
     # MM/MV

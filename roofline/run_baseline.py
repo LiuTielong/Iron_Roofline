@@ -1,7 +1,7 @@
 """
 计算直接跑llama-3.1-8B模型, 能达到的performance (tokens/s)。
 仅仅考虑生成一个token的时间, 然后用1除以它就得到performance了。
-实验配置是4种情形: 
+实验场景是4种: 
 (1) 短文本下的生成, batch_size=1.
 (2) 短文本下的生成, batch_size=128.
 (3) 长文本下的生成, batch_size=1.
