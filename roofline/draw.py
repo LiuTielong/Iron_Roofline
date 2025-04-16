@@ -107,14 +107,14 @@ def draw_combined_model(prefill_lengths, verify_times, draft_times, accepted_len
         accepted_lengths: 一个列表。对应每个prefill_lengths[i]的接受数。
         save_path: 图片保存位置。
     """
-    print(verify_times)
-    print(accepted_lengths)
+    # print(verify_times)
+    # print(accepted_lengths)
     performance_discounted = np.array(prefill_lengths) / (np.array(verify_times) + np.array(draft_times)) * batch_size
-    print(performance_discounted)
+    # print(performance_discounted)
     acc_rate = np.array(accepted_lengths) / np.array(prefill_lengths) 
 
     efficiency = np.array(performance_discounted) * acc_rate
-    print(efficiency)
+    # print(efficiency)
 
     # 绘图
     plt.figure(figsize=(10, 6))

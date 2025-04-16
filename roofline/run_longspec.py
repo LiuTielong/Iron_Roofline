@@ -23,8 +23,8 @@ AATs = list(longspec_aat.values())
 def run_longspec():
     # 先配置一些超参数
     parser = parse_args()
-    parser.add_argument("--avg_accepted_tokens",    type=int,   default=4   ,     help="the average number of accepted tokens per iteration."                     )
-    parser.add_argument("--gamma",              type=int, default=1, help="it's similar to total_tokens, (depth+1) in eagle algorithm." )
+    parser.add_argument("--avg_accepted_tokens",    type=int,   default=4   ,     help="the average number of accepted tokens per iteration."         )
+    parser.add_argument("--gamma",                  type=int,   default=1,        help="it's similar to total_tokens, (depth+1) in eagle algorithm."  )
     args = parser.parse_args()
 
     # 1. 长文本生成, batch_size=1.

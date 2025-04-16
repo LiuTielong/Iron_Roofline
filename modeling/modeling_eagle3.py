@@ -28,7 +28,7 @@ def eagle3_weight_load_size(args, input_len, first_layer:bool):
     if first_layer:
         weight_size += hidden_size * hidden_size * 3                                # fc, 注意*3，这是固定的size
     weight_size += (hidden_size * 2) * hidden_size                                  # q，注意*2
-    wieght_size += (hidden_size * 2) * hidden_size * kv_scale * 2                   # k, v，注意*2
+    weight_size += (hidden_size * 2) * hidden_size * kv_scale * 2                   # k, v，注意*2
     weight_size += hidden_size * hidden_size                                        # o_proj
     weight_size += hidden_size * intermediate_size * 3                              # up_proj, gate_proj, down_proj
     weight_size += hidden_size * vocab_size                                         # lm_head 

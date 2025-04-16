@@ -1,11 +1,11 @@
 """
 LongSpec for llama-3.1-8b模型的仿真器。
-小模型的结构：
-1. self_attn层：它的kv cache长度最长是512。进去之后先经过layernorm。各个模块（q,k,v,o）的维度都是和llama-3.1-8b的一个attention模块的维度一样。
-2. cross-attn层：使用大模型的最后一个decoder layer的kv cache. 长度不限制。进去之后也先进行layernorm计算。在代码中冗余计算了key, values，我在仿真器中去掉这个冗余计算的部分。
+小模型的结构: 
+1. self_attn层: 它的kv cache长度最长是512。进去之后先经过layernorm。各个模块(q,k,v,o)的维度都是和llama-3.1-8b的一个attention模块的维度一样。
+2. cross-attn层: 使用大模型的最后一个decoder layer的kv cache. 长度不限制。进去之后也先进行layernorm计算。在代码中冗余计算了key, values, 我在仿真器中去掉这个冗余计算的部分。
 3. ffn层。就是一个llamaMLP。记得要先经过一个layernorm层。
-4. 小模型的输入：由大模型的embedding层将input_ids映射，同时还会使用位置编码函数给小模型提供sin, cos位置编码（不过这个数据量比较小，我先忽略）。
-5. 小模型的输出：经过ffn层之后没有norm层，而是将[batch_size, input_len, hidden_size]这个张量直接给大模型的lm_head层得到预测的结果。
+4. 小模型的输入: 由大模型的embedding层将input_ids映射, 同时还会使用位置编码函数给小模型提供sin, cos位置编码(不过这个数据量比较小, 我先忽略)。
+5. 小模型的输出: 经过ffn层之后没有norm层, 而是将[batch_size, input_len, hidden_size]这个张量直接给大模型的lm_head层得到预测的结果。
 """
 
 import math
@@ -23,7 +23,7 @@ def longspec_weight_load_size(args, input_len):
     # self-attn
     weight_size += hidden_size * hidden_size * (2 + 2 * kv_scale)                   # q, k, v, o_proj
     # cross-attn
-    # 注意：我们这里省略对k, v的冗余计算
+    # 注意: 我们这里省略对k, v的冗余计算
     weight_size += hidden_size * hidden_size * 2                                    # q, o_proj
     # ffn
     weight_size += hidden_size * intermediate_size * 3                              # up_proj, gate_proj, down_proj
@@ -36,7 +36,7 @@ def longspec_weight_load_size(args, input_len):
 
 def longspec_act_load_size(args, input_len, kv_len):
     """
-    注意：self-attn的kv cache长度最长是512。cross-attn的kv cache长度不限制。
+    注意: self-attn的kv cache长度最长是512。cross-attn的kv cache长度不限制。
     """
     bit = args.act_bit
     hidden_size = args.hidden_size
@@ -53,7 +53,7 @@ def longspec_act_load_size(args, input_len, kv_len):
     act_size += input_len * hidden_size                                             # input layernorm的输入
     act_size += input_len * hidden_size * 3                                         # q, k, v的输入
     act_size += hidden_size * self_kv_len * 2 * kv_scale                            # kv cache加载
-    act_size += input_len * hidden_size * (1 + kv_scale)                            # qkt_matmul (这里本来是加载整个k cache的，但是我上一行加载了)
+    act_size += input_len * hidden_size * (1 + kv_scale)                            # qkt_matmul (这里本来是加载整个k cache的, 但是我上一行加载了)
     act_size += (input_len * self_kv_len * num_heads + input_len * hidden_size * kv_scale) # pv_matmul
     act_size += input_len * hidden_size * 2                                         # o_proj and residual
     # cross-attn
@@ -171,7 +171,7 @@ def longspec_draft_cycles_comp(args, input_len, kv_len, method="seq"):
     """
     这是longspec一整个draft过程花费的cycles。
     method: [seq, tree].
-    我们先使用"seq"，比较简单，可以创建和MagicDec相似的模型。
+    我们先使用"seq", 比较简单, 可以创建和MagicDec相似的模型。
     后面再考虑使用"tree"。
     """
     LD_CYCLES = 0
@@ -187,8 +187,8 @@ def longspec_draft_cycles_comp(args, input_len, kv_len, method="seq"):
         COMP_CYCLES += comp_cycle
         FUSED_CYCLES += fused_cycle
 
-        # 2. 生成树的后"depth"层节点
-        for i in range(args.depth):
+        # 2. 生成链的后"gamma-1"层节点
+        for i in range(args.gamma - 1):
             # 这里的kv_len是指当前层的kv cache长度。
             ld_cycle, st_cycle, comp_cycle, fused_cycle = longspec_cycles_comp(args, 1, kv_len)
             LD_CYCLES += ld_cycle
