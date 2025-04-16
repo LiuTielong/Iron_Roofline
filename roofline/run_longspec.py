@@ -59,7 +59,7 @@ def run_longspec():
         verify_times2.append(verify_time)
         draft_times2.append(draft_time)
 
-    return verify_times1, draft_times1, verify_times2, draft_times2
+    return verify_times1, verify_times2, draft_times1, draft_times2
 
 
 def draw_figures():
