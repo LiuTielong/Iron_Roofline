@@ -15,7 +15,7 @@ from modeling.modeling_eagle2 import eagle2_cycles_comp
 from modeling.parse_args import parse_args
 from modeling.modeling_llama3 import llama3_cycles_comp
 from modeling.AAT import eagle2_aat
-from .draw import draw_roofline, draw_roofline_discounted, draw_acceptance_rate, draw_combined_model
+from roofline.draw import draw_roofline, draw_roofline_discount, draw_acc, draw_combined_model
 
 total_tokens = list(eagle2_aat.keys())
 AATs = list(eagle2_aat.values())
@@ -30,8 +30,8 @@ def run_eagle2():
     args = parser.parse_args()
     
     # 1. 短文本下的生成，batch_size=1.
-    run_times = []
-    perf1 = []
+    verify_times1 = []
+    draft_times1 = []
     args.prompt_len = 128
     args.batch_size = 1
     for total_token, AAT in zip(total_tokens, AATs):
@@ -40,15 +40,15 @@ def run_eagle2():
         _, _, _, fused_draft_cycles = eagle2_cycles_comp(args, input_len=aat, kv_len=args.prompt_len)
         # 1.2 大模型的verify阶段
         _, _, _, fused_verify_cycles = llama3_cycles_comp(args, input_len=total_token, kv_len=args.prompt_len)
-        run_time = (fused_draft_cycles + fused_verify_cycles) / (args.clock_frequency * 1e6)  # 单位是秒
-        run_times.append(run_time)
-        perf1.append(aat / run_time)
-    # print(perf1)
+        draft_time = fused_draft_cycles / (args.clock_frequency * 1e6)  # 单位是秒
+        verify_time = fused_verify_cycles / (args.clock_frequency * 1e6)
+        verify_times1.append(verify_time)
+        draft_times1.append(draft_time)
 
     # 2. 短文本下的生成，batch_size=128.
     # batch_size一变大，更加compute bound，投机采样更加没用了。
-    run_times = []
-    perf2 = []
+    verify_times2 = []
+    draft_times2 = []
     args.prompt_len = 128
     args.batch_size = 128
     for total_token, AAT in zip(total_tokens, AATs):
@@ -57,23 +57,35 @@ def run_eagle2():
         _, _, _, fused_draft_cycles = eagle2_cycles_comp(args, input_len=aat, kv_len=args.prompt_len)
         # 2.2 大模型的verify阶段
         _, _, _, fused_verify_cycles = llama3_cycles_comp(args, input_len=total_token, kv_len=args.prompt_len)
-        run_time = (fused_draft_cycles + fused_verify_cycles) / (args.clock_frequency * 1e6)  # 单位是秒
-        run_times.append(run_time)
-        perf2.append(aat * args.batch_size / run_time)
-    # print(perf2)
+        draft_time = fused_draft_cycles / (args.clock_frequency * 1e6)
+        verify_time = fused_verify_cycles / (args.clock_frequency * 1e6)
+        verify_times2.append(verify_time)
+        draft_times2.append(draft_time)
 
     # 长文本的生成：待实现。
-    return perf1, perf2
+    return verify_times1, verify_times2, draft_times1, draft_times2
 
 def draw_figures():
     """
     根据run()函数的结果来绘制基本的roofline模型, 打折后的roofline模型, 接受率曲线, 最终的组合模型。
     """
-    perf1, perf2 = run_eagle2()
+    verify_times1, verify_times2, draft_times1, draft_times2 = run_eagle2()
     # 1. 短文本，batch_size=1
+    draw_roofline(prefill_lengths=total_tokens, times=verify_times1, save_path="Figures/eagle2/bs1_roofline_model.png")
+    draw_roofline_discount(prefill_lengths=total_tokens, verify_times=verify_times1, draft_times=draft_times1, 
+                           save_path="Figures/eagle2/bs1_discounted_roofline_model.png")
+    draw_acc(prefill_lengths=total_tokens, accepted_lengths=AATs, save_path="Figures/eagle2/bs1_acc.png")
+    draw_combined_model(prefill_lengths=total_tokens, verify_times=verify_times1, draft_times=draft_times1, 
+                        accepted_lengths=AATs, save_path="Figures/eagle2/bs1_combined_model.png")
 
     # 2. 短文本，batch_size=128
-
+    draw_roofline(prefill_lengths=total_tokens, times=verify_times2, save_path="Figures/eagle2/bs128_roofline_model.png" ,batch_size=128)
+    draw_roofline_discount(prefill_lengths=total_tokens, verify_times=verify_times2, draft_times=draft_times2, 
+                           save_path="Figures/eagle2/bs128_discounted_roofline_model.png", batch_size=128)
+    draw_acc(prefill_lengths=total_tokens, accepted_lengths=AATs, save_path="Figures/eagle2/bs128_acc.png")
+    draw_combined_model(prefill_lengths=total_tokens, verify_times=verify_times2, draft_times=draft_times2, 
+                        accepted_lengths=AATs, save_path="Figures/eagle2/bs128_combined_model.png", batch_size=128)
 
 if __name__ == "__main__":
-    run_eagle2()
+    # run_eagle2()
+    draw_figures()
