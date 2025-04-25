@@ -17,16 +17,7 @@ from modeling.modeling_llama3 import llama3_cycles_comp
 from modeling.AAT import longspec_aat
 from roofline.draw import draw_roofline, draw_roofline_discount, draw_acc, draw_combined_model
 
-total_tokens = list(longspec_aat.keys())        # 也就是gamma
-AATs = list(longspec_aat.values())
-
-def run_longspec():
-    # 先配置一些超参数
-    parser = parse_args()
-    parser.add_argument("--avg_accepted_tokens",    type=int,   default=4   ,     help="the average number of accepted tokens per iteration."         )
-    parser.add_argument("--gamma",                  type=int,   default=1,        help="it's similar to total_tokens, (depth+1) in eagle algorithm."  )
-    args = parser.parse_args()
-
+def run_longspec(args, total_tokens, AATs):
     # 1. 长文本生成, batch_size=1.
     verify_times1 = []
     draft_times1 = []
@@ -66,7 +57,15 @@ def draw_figures():
     """
     根据run()函数的结果来绘制基本的roofline模型, 打折后的roofline模型, 接受率曲线, 最终的组合模型。
     """
-    verify_times1, verify_times2, draft_times1, draft_times2 = run_longspec()
+    # 先配置一些超参数
+    parser = parse_args()
+    parser.add_argument("--avg_accepted_tokens",    type=int,   default=4   ,     help="the average number of accepted tokens per iteration."         )
+    parser.add_argument("--gamma",                  type=int,   default=1,        help="it's similar to total_tokens, (depth+1) in eagle algorithm."  )
+    args = parser.parse_args()
+
+    total_tokens = list(longspec_aat.keys())        # 等于gamma+1
+    AATs = list(longspec_aat.values())
+    verify_times1, verify_times2, draft_times1, draft_times2 = run_longspec(args, total_tokens, AATs)
     # 1. 长文本，batch_size=1
     draw_roofline(prefill_lengths=total_tokens, times=verify_times1, save_path="Figures/longspec/bs1_roofline_model.png")
     draw_roofline_discount(prefill_lengths=total_tokens, verify_times=verify_times1, draft_times=draft_times1, 

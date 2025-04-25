@@ -26,7 +26,7 @@ def draw_roofline(prefill_lengths, times, save_path:str, batch_size:int=1):
     plt.grid()
     # plt.savefig("Figures/roofline_model.png")
     plt.savefig(save_path)
-    plt.show()
+    # plt.show()
     return 
 
 
@@ -56,7 +56,7 @@ def draw_roofline_discount(prefill_lengths, verify_times, draft_times, save_path
     plt.grid()
     # plt.savefig("Figures/Discounted_roofline_model.png")
     plt.savefig(save_path)
-    plt.show()
+    # plt.show()
     return
 
 
@@ -90,11 +90,11 @@ def draw_acc(prefill_lengths, accepted_lengths, save_path:str):
     fig.tight_layout()
     plt.grid(True)
     plt.savefig(save_path)
-    plt.show()
+    # plt.show()
     return
 
 
-def draw_combined_model(prefill_lengths, verify_times, draft_times, accepted_lengths, save_path:str, batch_size:int=1):
+def draw_combined_model(prefill_lengths, verify_times, draft_times, accepted_lengths, save_path:str, batch_size:int=1, ori_x:int=5):
     """
     Description:
         用打折后的roofline模型乘以接受率曲线, 就能得到组合模型。
@@ -106,6 +106,7 @@ def draw_combined_model(prefill_lengths, verify_times, draft_times, accepted_len
         draft_times: 小模型draft的时间。
         accepted_lengths: 一个列表。对应每个prefill_lengths[i]的接受数。
         save_path: 图片保存位置。
+        ori_x: 原始配置的prefill长度。(也就是gamma+1)
     """
     # print(verify_times)
     # print(accepted_lengths)
@@ -119,10 +120,28 @@ def draw_combined_model(prefill_lengths, verify_times, draft_times, accepted_len
     # 绘图
     plt.figure(figsize=(10, 6))
     plt.plot(prefill_lengths, efficiency, marker='o', linestyle='-', color='r')
+
+    # 找到效率最大的点，并在图上标记出来
+    max_idx = np.argmax(efficiency)
+    max_x = prefill_lengths[max_idx]
+    max_y = efficiency[max_idx]
+    plt.plot(max_x, max_y, marker='*', markersize=15, color='green', label='Max Efficiency')
+    plt.annotate(f'({max_x}, {max_y:.2f})', xy=(max_x, max_y),
+             xytext=(max_x, max_y))
+    plt.legend()
+
+    # 找到原始配置的点，并在图上标记出来
+    ori_id = prefill_lengths.index(ori_x)
+    ori_y = efficiency[ori_id]
+    plt.plot(ori_x, ori_y, marker='*', markersize=15, color='blue', label='Original Configuration')
+    plt.annotate(f'({ori_x}, {ori_y:.2f})', xy=(ori_x, ori_y),
+             xytext=(ori_x, ori_y))
+    plt.legend()
+
     plt.xlabel("Prefill length (tokens)")
     plt.ylabel("Effective performance (tokens/s)")
     plt.title("Combined Model")
     plt.grid()
     plt.savefig(save_path)
-    plt.show()
+    # plt.show()
     return
