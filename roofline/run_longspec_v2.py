@@ -3,13 +3,12 @@
 Batch size恒定为1.
 使用的AAT数据来自: ./Data/表3-2.xlsx, ./Data/表3-4.xlsx.
 论文默认配置: gamma=4, tree_shape为:[4,16,16,16,16].
-希望我搜索出来的配置能超过这些默认配置。
+希望我搜索出来的配置能超过这些默认配置。结果：确实超过了默认配置。
 """
 import sys
 sys.path.append("./")
 sys.path.append("../")
 import pandas as pd
-from run_longspec import run_longspec
 from roofline.draw import draw_roofline, draw_roofline_discount, draw_acc, draw_combined_model
 from modeling.parse_args import parse_args
 from modeling.modeling_longspec import longspec_draft_cycles_comp
