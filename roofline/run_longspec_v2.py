@@ -19,6 +19,7 @@ def main():
     parser = parse_args()
     parser.add_argument("--avg_accepted_tokens",    type=int,   default=4   ,     help="the average number of accepted tokens per iteration."         )
     parser.add_argument("--gamma",                  type=int,   default=1,        help="it's similar to total_tokens, (depth+1) in eagle algorithm."  )
+    parser.add_argument("--tree_shape", nargs="+",  type=int, default=[4, 16, 16, 16, 16], help="the tree shape of the draft token tree." )
     args = parser.parse_args()
     args.batch_size = 1
 
@@ -40,8 +41,9 @@ def main():
         args.prompt_len = prefill_len
         for total_token, AAT in zip(verify_lens, AATs):
             aat = int(AAT)
+            args.gamma = total_token - 1        # 这是draft阶段需要考虑的，draft了多少次
             # 小模型的draft阶段
-            _, _, _, fused_draft_cycles = longspec_draft_cycles_comp(args, input_len=aat, kv_len=args.prompt_len)
+            _, _, _, fused_draft_cycles = longspec_draft_cycles_comp(args, input_len=aat, kv_len=args.prompt_len, method="seq")
             # 大模型的verify阶段
             _, _, _, fused_verify_cycles = llama3_cycles_comp(args, input_len=total_token, kv_len=args.prompt_len)
             draft_time = fused_draft_cycles / (args.clock_frequency * 1e6)
@@ -60,7 +62,8 @@ def main():
     df = pd.read_excel(data_dir2, skiprows=2, header=None)
     gammas = df.iloc[:, 0].tolist()
     verify_lens = [gamma + 1 for gamma in gammas]   # 大模型校验时的输入数据长度
-    AATs_all = df.iloc[:, 1:].values.T.tolist()           # AAT数据，存为2D列表
+    tree_shapes = df.iloc[:, 1].tolist()            # 树形投机采样的树形结构
+    AATs_all = df.iloc[:, 2:].values.T.tolist()     # AAT数据，存为2D列表
     i = 0
     for prefill_len in prefill_lens:
         AATs = AATs_all[i]
@@ -68,10 +71,11 @@ def main():
         verify_times = []
         draft_times = []
         args.prompt_len = prefill_len
-        for total_token, AAT in zip(verify_lens, AATs):
+        for total_token, AAT, tree_shape in zip(verify_lens, AATs, tree_shapes):
             aat = int(AAT)
+            args.tree_shape = [int(x) for x in tree_shape.split()]
             # 小模型的draft阶段
-            _, _, _, fused_draft_cycles = longspec_draft_cycles_comp(args, input_len=aat, kv_len=args.prompt_len)
+            _, _, _, fused_draft_cycles = longspec_draft_cycles_comp(args, input_len=aat, kv_len=args.prompt_len, method="tree")
             # 大模型的verify阶段
             _, _, _, fused_verify_cycles = llama3_cycles_comp(args, input_len=total_token, kv_len=args.prompt_len)
             draft_time = fused_draft_cycles / (args.clock_frequency * 1e6)

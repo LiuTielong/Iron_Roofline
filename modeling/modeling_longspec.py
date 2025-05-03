@@ -197,7 +197,24 @@ def longspec_draft_cycles_comp(args, input_len, kv_len, method="seq"):
             FUSED_CYCLES += fused_cycle
 
     elif method == "tree":
-        raise NotImplementedError("Tree method is not implemented yet.")
+        # 生成树的根节点
+        ld_cycle, st_cycle, comp_cycle, fused_cycle = longspec_cycles_comp(args, input_len, kv_len)
+        LD_CYCLES += ld_cycle
+        ST_CYCLES += st_cycle
+        COMP_CYCLES += comp_cycle
+        FUSED_CYCLES += fused_cycle
+
+        # 生成树的后面几层节点
+        # 比如，树的形状是[4,5，6，7，8]，那么还需要生成4次, 每次的输入是[4,5,6,7]，而最后一个“8”不再需要输入模型。
+        for i in range(len(args.tree_shape)-1):
+            num_nodes = args.tree_shape[i]
+            if num_nodes == 0: 
+                break
+            ld_cycle, st_cycle, comp_cycle, fused_cycle = longspec_cycles_comp(args, num_nodes, kv_len)
+            LD_CYCLES += ld_cycle
+            ST_CYCLES += st_cycle
+            COMP_CYCLES += comp_cycle
+            FUSED_CYCLES += fused_cycle
     else:
         raise ValueError("method should be either 'seq' or 'tree'.")
     
