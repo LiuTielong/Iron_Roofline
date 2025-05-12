@@ -15,8 +15,8 @@ def parse_args():
     parser.add_argument("--generation_len",         type=int,   default=128                                                                                       )   
     parser.add_argument("--batch_size",             type=int,   default=128                                                                                       )
     # hardware parameters
-    parser.add_argument("--weight_bit",             type=int,   default=8,        help="the bit of weight of the base LLM."                                       )
-    parser.add_argument("--act_bit",                type=int,   default=8,        help="the bit of weight of the base LLM."                                       )
+    parser.add_argument("--weight_bit",             type=int,   default=16,        help="the bit of weight of the base LLM."                                       )
+    parser.add_argument("--act_bit",                type=int,   default=16,        help="the bit of weight of the base LLM."                                       )
     parser.add_argument("--MM_START_M_NUMBER",      type=int,   default=128,      help="the number of activations."                                               )
     parser.add_argument("--num_slr",                type=int,   default=4,        help="the number of Super Logic regions on FPGA."                               )
     parser.add_argument("--hbm_bandwidth",          type=int,   default=819.2 ,   help="The bandwidth of HBM on FPGA, whose unit is GB/s."                        )

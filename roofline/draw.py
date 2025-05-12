@@ -94,7 +94,7 @@ def draw_acc(prefill_lengths, accepted_lengths, save_path:str):
     return
 
 
-def draw_combined_model(prefill_lengths, verify_times, draft_times, accepted_lengths, save_path:str, batch_size:int=1, ori_x:int=5):
+def draw_combined_model(prefill_lengths, verify_times, draft_times, accepted_lengths, save_path:str, batch_size:int=1, ori_x:int=5, naive_x:int=37):
     """
     Description:
         用打折后的roofline模型乘以接受率曲线, 就能得到组合模型。
@@ -137,6 +137,15 @@ def draw_combined_model(prefill_lengths, verify_times, draft_times, accepted_len
     plt.annotate(f'({ori_x}, {ori_y:.2f})', xy=(ori_x, ori_y),
              xytext=(ori_x, ori_y))
     plt.legend()
+
+    # 找naive set的点，在图中标出来
+    naive_id = prefill_lengths.index(naive_x)
+    naive_y = efficiency[naive_id]
+    plt.plot(naive_x, naive_y, marker='*', markersize=15, color='red', label='Naive Configuration')
+    plt.annotate(f'({naive_x}, {naive_y:.2f})', xy=(naive_x, naive_y),
+             xytext=(naive_x, naive_y))
+    plt.legend()
+
 
     plt.xlabel("Prefill length (tokens)")
     plt.ylabel("Effective performance (tokens/s)")

@@ -28,6 +28,7 @@ def main():
     data_dir2 = "./Data/表3-4.xlsx"
 
     # step 1: 针对链式投机采样，数据来自表3-2.xlsx
+    """
     df = pd.read_excel(data_dir1, skiprows=2, header=None)
     gammas = df.iloc[:, 0].tolist()
     verify_lens = [gamma + 1 for gamma in gammas]   # 大模型校验时的输入数据长度
@@ -57,6 +58,7 @@ def main():
         draw_combined_model(prefill_lengths=verify_lens, verify_times=verify_times, draft_times=draft_times, 
                             accepted_lengths=AATs, save_path=f"Figures/longspec_all/chain/{prefill_len}_combined_model.png", batch_size=1, ori_x=5)
         i += 1
+    """
 
     # step 2: 针对树形投机采样，数据来自表3-4.xlsx
     df = pd.read_excel(data_dir2, skiprows=2, header=None)
@@ -90,6 +92,7 @@ def main():
                             accepted_lengths=AATs, save_path=f"Figures/longspec_all/tree/{prefill_len}_combined_model.png", batch_size=1, ori_x=69)
         # 因为原始配置是[4,16,16,16,16], 节点数为1+68=69.
         i += 1
+
 
 if __name__ == "__main__":
     main()

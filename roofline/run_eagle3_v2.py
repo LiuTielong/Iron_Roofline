@@ -26,6 +26,7 @@ def main():
     data_dir2 = "./Data/表3-6.xlsx"
 
     # step 1: 针对链式投机采样，数据来自表3-5.xlsx
+    """
     prefill_lens = [128, 256, 512, 1024, 2048, 4096, 8192]
     df = pd.read_excel(data_dir1, skiprows=2, header=None)
     gammas = df.iloc[:, 0].tolist()
@@ -56,7 +57,8 @@ def main():
                             save_path=f"Figures/eagle3_all/chain/{prefill_len}_discounted_roofline_model.png")
         draw_acc(prefill_lengths=verify_lens, accepted_lengths=AATs, save_path=f"Figures/eagle3_all/chain/{prefill_len}_acc.png")
         draw_combined_model(prefill_lengths=verify_lens, verify_times=verify_times, draft_times=draft_times, 
-                            accepted_lengths=AATs, save_path=f"Figures/eagle3_all/chain/{prefill_len}_combined_model.png", batch_size=1, ori_x=5)
+                            accepted_lengths=AATs, save_path=f"Figures/eagle3_all/chain/{prefill_len}_combined_model.png", batch_size=1, ori_x=5)"
+    """
     
     # step 2: 针对树形投机采样，数据来自表3-6.xlsx
     prefill_lens = [128, 256, 512, 1024, 2048]
@@ -91,7 +93,7 @@ def main():
                             save_path=f"Figures/eagle3_all/tree/{prefill_len}_discounted_roofline_model.png")
         draw_acc(prefill_lengths=verify_lens, accepted_lengths=AATs, save_path=f"Figures/eagle3_all/tree/{prefill_len}_acc.png")
         draw_combined_model(prefill_lengths=verify_lens, verify_times=verify_times, draft_times=draft_times, 
-                            accepted_lengths=AATs, save_path=f"Figures/eagle3_all/tree/{prefill_len}_combined_model.png", batch_size=1, ori_x=60)
+                            accepted_lengths=AATs, save_path=f"Figures/eagle3_all/tree/{prefill_len}_combined_model.png", batch_size=1, ori_x=60, naive_x=31)
 
 
 if __name__ == "__main__":
