@@ -76,7 +76,7 @@ def draw_figures():
                            save_path="Figures/eagle2/bs1_discounted_roofline_model.png")
     draw_acc(prefill_lengths=total_tokens, accepted_lengths=AATs, save_path="Figures/eagle2/bs1_acc.png")
     draw_combined_model(prefill_lengths=total_tokens, verify_times=verify_times1, draft_times=draft_times1, 
-                        accepted_lengths=AATs, save_path="Figures/eagle2/bs1_combined_model.png")
+                        accepted_lengths=AATs, save_path="Figures/eagle2/bs1_combined_model.png", naive_x=None)
 
     # 2. 短文本，batch_size=128
     draw_roofline(prefill_lengths=total_tokens, times=verify_times2, save_path="Figures/eagle2/bs128_roofline_model.png" ,batch_size=128)
@@ -84,7 +84,7 @@ def draw_figures():
                            save_path="Figures/eagle2/bs128_discounted_roofline_model.png", batch_size=128)
     draw_acc(prefill_lengths=total_tokens, accepted_lengths=AATs, save_path="Figures/eagle2/bs128_acc.png")
     draw_combined_model(prefill_lengths=total_tokens, verify_times=verify_times2, draft_times=draft_times2, 
-                        accepted_lengths=AATs, save_path="Figures/eagle2/bs128_combined_model.png", batch_size=128)
+                        accepted_lengths=AATs, save_path="Figures/eagle2/bs128_combined_model.png", batch_size=128, naive_x=None)
 
 if __name__ == "__main__":
     # run_eagle2()

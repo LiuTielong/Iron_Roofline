@@ -59,7 +59,7 @@ def run_baseline_v2():
     parser = parse_args()
     args = parser.parse_args()
     
-    # 短文本下的生成, batch_size=1
+    # 长短文本下的生成, batch_size=1
     args.batch_size = 1
     prefill_lens = [128, 256, 512, 1024, 2048, 4096, 8192, 16384]
     for prefill_len in prefill_lens:

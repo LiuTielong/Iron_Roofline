@@ -20,7 +20,7 @@ def draw_roofline(prefill_lengths, times, save_path:str, batch_size:int=1):
 
     plt.figure(figsize=(10, 6))
     plt.plot(prefill_lengths, performance, marker='o', linestyle='-', color='r')
-    plt.xlabel("Prefill length (tokens)")
+    plt.xlabel("Verify length (tokens)")
     plt.ylabel("Performance (tokens/s)")
     plt.title("Roofline Model")
     plt.grid()
@@ -50,7 +50,7 @@ def draw_roofline_discount(prefill_lengths, verify_times, draft_times, save_path
 
     plt.figure(figsize=(10, 6))
     plt.plot(prefill_lengths, performance, marker='o', linestyle='-', color='r')
-    plt.xlabel("Prefill length (tokens)")
+    plt.xlabel("Verify length (tokens)")
     plt.ylabel("Performance (tokens/s)")
     plt.title("Discounted Roofline Model")
     plt.grid()
@@ -75,7 +75,7 @@ def draw_acc(prefill_lengths, accepted_lengths, save_path:str):
     fig, ax1 = plt.subplots(figsize=(10, 6))
     
     color1 = 'tab:blue'
-    ax1.set_xlabel('Total verified tokens')
+    ax1.set_xlabel('Verify length (tokens)')
     ax1.set_ylabel('Average Accepted tokens', color=color1)
     ax1.plot(prefill_lengths, accepted_lengths, marker='o', linestyle='-', color=color1, label='average accepted tokens')
     ax1.tick_params(axis='y', labelcolor=color1)
@@ -94,7 +94,7 @@ def draw_acc(prefill_lengths, accepted_lengths, save_path:str):
     return
 
 
-def draw_combined_model(prefill_lengths, verify_times, draft_times, accepted_lengths, save_path:str, batch_size:int=1, ori_x:int=5, naive_x:int=37):
+def draw_combined_model(prefill_lengths, verify_times, draft_times, accepted_lengths, save_path:str, batch_size:int=1, ori_x:int=5, naive_x:None|int=10):
     """
     Description:
         用打折后的roofline模型乘以接受率曲线, 就能得到组合模型。
@@ -139,15 +139,16 @@ def draw_combined_model(prefill_lengths, verify_times, draft_times, accepted_len
     plt.legend()
 
     # 找naive set的点，在图中标出来
-    naive_id = prefill_lengths.index(naive_x)
-    naive_y = efficiency[naive_id]
-    plt.plot(naive_x, naive_y, marker='*', markersize=15, color='red', label='Naive Configuration')
-    plt.annotate(f'({naive_x}, {naive_y:.2f})', xy=(naive_x, naive_y),
-             xytext=(naive_x, naive_y))
-    plt.legend()
+    if naive_x is not None:
+        naive_id = prefill_lengths.index(naive_x)
+        naive_y = efficiency[naive_id]
+        plt.plot(naive_x, naive_y, marker='*', markersize=15, color='red', label='Naive Configuration')
+        plt.annotate(f'({naive_x}, {naive_y:.2f})', xy=(naive_x, naive_y),
+                xytext=(naive_x, naive_y))
+        plt.legend()
 
 
-    plt.xlabel("Prefill length (tokens)")
+    plt.xlabel("Verify length (tokens)")
     plt.ylabel("Effective performance (tokens/s)")
     plt.title("Combined Model")
     plt.grid()
