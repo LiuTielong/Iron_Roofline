@@ -112,7 +112,7 @@ def llama3_mm_comp(args, input_len, kv_len):
 
     computation = 0
     kv_len = input_len + kv_len
-    computation += input_len * hidden_size * hidden_size                    # q_proj, o_proj
+    computation += input_len * hidden_size * hidden_size                    # q_proj
     computation += input_len * hidden_size * (hidden_size * kv_scale) * 2   # k_proj, v_proj
     computation += input_len * kv_len * hidden_size * 2                     # qkt_matmul, pv_matmul
     computation += input_len * hidden_size * hidden_size                    # o_proj

@@ -94,5 +94,114 @@ def main():
         i += 1
 
 
+def test_vicuna_v15_7B():
+    """
+    测试vicuna-v1.5-7B模型的加速比.
+    实验数据来自Data/表4-1.xlsx。
+    实验结果：相当不错。
+    """
+    parser = parse_args()
+    parser.add_argument("--avg_accepted_tokens",    type=int,   default=4   ,     help="the average number of accepted tokens per iteration."         )
+    parser.add_argument("--gamma",                  type=int,   default=1,        help="it's similar to total_tokens, (depth+1) in eagle algorithm."  )
+    parser.add_argument("--tree_shape", nargs="+",  type=int, default=[4, 16, 16, 16, 16], help="the tree shape of the draft token tree." )
+    args = parser.parse_args()
+    args.batch_size = 1
+    
+    # 首先修改模型的超参数, 修改成vicuna-v1.5-7B的配置
+    args.hidden_size = 4096
+    args.intermediate_size = 11008
+    args.num_layers = 32
+    args.num_heads = 32
+    args.head_dim = 128
+    args.vocab_size = 32000
+    args.kv_scale = 1.0  # 不进行GQA
+
+    # 读取数据
+    data_dir = "./Data/表4-1.xlsx"
+    df = pd.read_excel(data_dir, skiprows=1, header=None)
+    gammas = df.iloc[:, 0].tolist()
+    verify_lens = [gamma + 1 for gamma in gammas]   # 大模型校验时的输入数据长度
+    tree_shapes = df.iloc[:, 1].tolist()            # 树形投机采样的树形结构
+    AATs = df.iloc[:, 2].tolist()     
+
+    # 目前只针对prefill length=1024进行了实验
+    args.prompt_len = 1024
+    verify_times = []
+    draft_times = []
+    for total_token, AAT, tree_shape in zip(verify_lens, AATs, tree_shapes):
+        aat = int(AAT)
+        args.tree_shape = [int(x) for x in tree_shape.split()]
+        # 小模型的draft阶段
+        _, _, _, fused_draft_cycles = longspec_draft_cycles_comp(args, input_len=aat, kv_len=args.prompt_len, method="tree")
+        # 大模型的verify阶段
+        _, _, _, fused_verify_cycles = llama3_cycles_comp(args, input_len=total_token, kv_len=args.prompt_len)
+        draft_time = fused_draft_cycles / (args.clock_frequency * 1e6)
+        verify_time = fused_verify_cycles / (args.clock_frequency * 1e6)
+        verify_times.append(verify_time)
+        draft_times.append(draft_time)
+    draw_roofline(prefill_lengths=verify_lens, times=verify_times, save_path=f"Figures/longspec_other_models/vicuna_v15_7B/roofline_model.png")
+    draw_roofline_discount(prefill_lengths=verify_lens, verify_times=verify_times, draft_times=draft_times, 
+                            save_path=f"Figures/longspec_other_models/vicuna_v15_7B/discounted_roofline_model.png")
+    draw_acc(prefill_lengths=verify_lens, accepted_lengths=AATs, save_path=f"Figures/longspec_other_models/vicuna_v15_7B/acc.png")
+    draw_combined_model(prefill_lengths=verify_lens, verify_times=verify_times, draft_times=draft_times, 
+                        accepted_lengths=AATs, save_path=f"Figures/longspec_other_models/vicuna_v15_7B/combined_model.png", batch_size=1, ori_x=71, naive_x=None)
+    # 原始配置其实是68，不过我没有对它进行测试，所以就用71来代替了
+
+
+def test_vicuna_v15_13B():
+    """
+    测试vicuna-v1.5-13B模型的加速比.
+    实验数据来自Data/表4-1.xlsx。
+    实验结果：相当不错。
+    """
+    parser = parse_args()
+    parser.add_argument("--avg_accepted_tokens",    type=int,   default=4   ,     help="the average number of accepted tokens per iteration."         )
+    parser.add_argument("--gamma",                  type=int,   default=1,        help="it's similar to total_tokens, (depth+1) in eagle algorithm."  )
+    parser.add_argument("--tree_shape", nargs="+",  type=int, default=[4, 16, 16, 16, 16], help="the tree shape of the draft token tree." )
+    args = parser.parse_args()
+    args.batch_size = 1
+    
+    # 首先修改模型的超参数
+    args.hidden_size = 5120
+    args.intermediate_size = 13824
+    args.num_layers = 40
+    args.num_heads = 40
+    args.head_dim = 128
+    args.vocab_size = 32000
+    args.kv_scale = 1.0  # 不进行GQA
+
+    # 读取数据
+    data_dir = "./Data/表4-1.xlsx"
+    df = pd.read_excel(data_dir, skiprows=1, header=None)
+    gammas = df.iloc[:, 0].tolist()
+    verify_lens = [gamma + 1 for gamma in gammas]   # 大模型校验时的输入数据长度
+    tree_shapes = df.iloc[:, 1].tolist()            # 树形投机采样的树形结构
+    AATs = df.iloc[:, 3].tolist()                   # 提取本模型对应的列的AAT数据
+
+    # 目前只针对prefill length=1024进行了实验
+    args.prompt_len = 1024
+    verify_times = []
+    draft_times = []
+    for total_token, AAT, tree_shape in zip(verify_lens, AATs, tree_shapes):
+        aat = int(AAT)
+        args.tree_shape = [int(x) for x in tree_shape.split()]
+        # 小模型的draft阶段
+        _, _, _, fused_draft_cycles = longspec_draft_cycles_comp(args, input_len=aat, kv_len=args.prompt_len, method="tree")
+        # 大模型的verify阶段
+        _, _, _, fused_verify_cycles = llama3_cycles_comp(args, input_len=total_token, kv_len=args.prompt_len)
+        draft_time = fused_draft_cycles / (args.clock_frequency * 1e6)
+        verify_time = fused_verify_cycles / (args.clock_frequency * 1e6)
+        verify_times.append(verify_time)
+        draft_times.append(draft_time)
+    draw_roofline(prefill_lengths=verify_lens, times=verify_times, save_path=f"Figures/longspec_other_models/vicuna_v15_13B/roofline_model.png")
+    draw_roofline_discount(prefill_lengths=verify_lens, verify_times=verify_times, draft_times=draft_times, 
+                            save_path=f"Figures/longspec_other_models/vicuna_v15_13B/discounted_roofline_model.png")
+    draw_acc(prefill_lengths=verify_lens, accepted_lengths=AATs, save_path=f"Figures/longspec_other_models/vicuna_v15_13B/acc.png")
+    draw_combined_model(prefill_lengths=verify_lens, verify_times=verify_times, draft_times=draft_times, 
+                        accepted_lengths=AATs, save_path=f"Figures/longspec_other_models/vicuna_v15_13B/combined_model.png", batch_size=1, ori_x=71, naive_x=None)
+    # 原始配置其实是68，不过我没有对它进行测试，所以就用71来代替了
+
 if __name__ == "__main__":
-    main()
+    # main()
+    # test_vicuna_v15_7B()
+    test_vicuna_v15_13B()
