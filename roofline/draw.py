@@ -94,36 +94,36 @@ def draw_acc(prefill_lengths, accepted_lengths, save_path:str):
     return
 
 
-def draw_combined_model(prefill_lengths, verify_times, draft_times, accepted_lengths, save_path:str, batch_size:int=1, ori_x:int=5, naive_x:None|int=10):
+def draw_combined_model(verify_lengths, verify_times, draft_times, accepted_lengths, save_path:str, batch_size:int=1, ori_x:int=5, naive_x:None|int=10):
     """
     Description:
         用打折后的roofline模型乘以接受率曲线, 就能得到组合模型。
         纵坐标是有效performance, 横坐标是verify的token数。
     Inputs:
-        prefill_lengths: 一个列表。也就是verified token数。
+        verify_lengths: 一个列表。也就是verified token数。
         performance: 一个列表。原始roofline模型的performance。
         verify_times: 大模型verify的时间。
         draft_times: 小模型draft的时间。
-        accepted_lengths: 一个列表。对应每个prefill_lengths[i]的接受数。
+        accepted_lengths: 一个列表。对应每个verify_lengths[i]的接受数。
         save_path: 图片保存位置。
         ori_x: 原始配置的prefill长度。(也就是gamma+1)
     """
     # print(verify_times)
     # print(accepted_lengths)
-    performance_discounted = np.array(prefill_lengths) / (np.array(verify_times) + np.array(draft_times)) * batch_size
+    performance_discounted = np.array(verify_lengths) / (np.array(verify_times) + np.array(draft_times)) * batch_size
     # print(performance_discounted)
-    acc_rate = np.array(accepted_lengths) / np.array(prefill_lengths) 
+    acc_rate = np.array(accepted_lengths) / np.array(verify_lengths) 
 
     efficiency = np.array(performance_discounted) * acc_rate
     # print(efficiency)
 
     # 绘图
     plt.figure(figsize=(10, 6))
-    plt.plot(prefill_lengths, efficiency, marker='o', linestyle='-', color='r')
+    plt.plot(verify_lengths, efficiency, marker='o', linestyle='-', color='r')
 
     # 找到效率最大的点，并在图上标记出来
     max_idx = np.argmax(efficiency)
-    max_x = prefill_lengths[max_idx]
+    max_x = verify_lengths[max_idx]
     max_y = efficiency[max_idx]
     plt.plot(max_x, max_y, marker='*', markersize=15, color='green', label='Max Efficiency')
     plt.annotate(f'({max_x}, {max_y:.2f})', xy=(max_x, max_y),
@@ -131,7 +131,7 @@ def draw_combined_model(prefill_lengths, verify_times, draft_times, accepted_len
     plt.legend()
 
     # 找到原始配置的点，并在图上标记出来
-    ori_id = prefill_lengths.index(ori_x)
+    ori_id = verify_lengths.index(ori_x)
     ori_y = efficiency[ori_id]
     plt.plot(ori_x, ori_y, marker='*', markersize=15, color='blue', label='Original Configuration')
     plt.annotate(f'({ori_x}, {ori_y:.2f})', xy=(ori_x, ori_y),
@@ -140,7 +140,7 @@ def draw_combined_model(prefill_lengths, verify_times, draft_times, accepted_len
 
     # 找naive set的点，在图中标出来
     if naive_x is not None:
-        naive_id = prefill_lengths.index(naive_x)
+        naive_id = verify_lengths.index(naive_x)
         naive_y = efficiency[naive_id]
         plt.plot(naive_x, naive_y, marker='*', markersize=15, color='red', label='Naive Configuration')
         plt.annotate(f'({naive_x}, {naive_y:.2f})', xy=(naive_x, naive_y),

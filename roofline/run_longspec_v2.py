@@ -311,8 +311,8 @@ def test_longchat_13B():
 
 
 if __name__ == "__main__":
-    # main()
+    main()
     # test_vicuna_v15_7B()
     # test_vicuna_v15_13B()
     # test_longchat_7b()
-    test_longchat_13B()
+    # test_longchat_13B()

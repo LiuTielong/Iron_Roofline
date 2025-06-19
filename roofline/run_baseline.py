@@ -73,3 +73,19 @@ def run_baseline_v2():
 if __name__ == "__main__":
     # run_baseline()
     run_baseline_v2()
+
+
+"""
+结果：
+prefill长度为:128, perf: 40.09 tokens/s
+prefill长度为:256, perf: 39.39 tokens/s  
+prefill长度为:512, perf: 38.06 tokens/s  
+prefill长度为:1024, perf: 35.66 tokens/s 
+prefill长度为:2048, perf: 31.66 tokens/s 
+prefill长度为:4096, perf: 25.86 tokens/s 
+prefill长度为:8192, perf: 18.92 tokens/s 
+prefill长度为:16384, perf: 12.32 tokens/s
+值得注意的是: 我这里在变化prefill长度时上下文performance变化也如此大, 是因为
+在load activation的时候, hbm的通道数和通道利用率都要比load weight小很多。
+所以本质上我这里仍然是基于FlightLLM的一个仿真器。
+"""
