@@ -3,5 +3,10 @@
 表格3-5是eagle-3的链式AAT结果；
 表格3-6是eagle-3的树式AAT结果；
 表4-1是4个模型（vicuna-7B-v1.5, vicuna-13B-v1.5, longspec-7B, longspec-13B）在prefill长度为1024时，使用LongSpec算法测出来的AAT·
+表5是多任务的AAT结果；证明我们的方法具有任务无关的特性；
+表6是验证我的方法2（基于先验知识的draft tree）的效果。可以看到使用我的方法得到的draft tree的接受率比较高。
+表7是motivation的数据。反应出GPU和FPGA的加速比侧重于不同的verify length（GPU在verify length较高的时候加速比高，而FPGA则在）
+verify length较小的时候加速比高）。
+表8是一个很大的实验表格，记录了多种模型在不同上下文长度下的AAT。
 
 它们的generation长度都是1024。

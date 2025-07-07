@@ -14,6 +14,7 @@ from scipy.optimize import curve_fit
 from sklearn.metrics import r2_score
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 from scipy.optimize import fsolve
+from matplotlib.ticker import FormatStrFormatter
 
 def draw_all():
     # 现在把所有的AAT曲线都画在一张图上
@@ -22,7 +23,7 @@ def draw_all():
     df = pd.read_excel(data_dir, skiprows=2, header=None)
     gammas = df.iloc[:, 0].tolist()
     verify_lens = [gamma + 1 for gamma in gammas]           # 大模型校验时的输入数据长度
-    AATs_all = df.iloc[:, 3:].values.T.tolist()             # AAT数据，存为2D列表, prefill长度为128的那一列我不要了
+    AATs_all = df.iloc[:, 2:].values.T.tolist()             # AAT数据，存为2D列表
     for i, aat_curve in enumerate(AATs_all):
         plt.plot(verify_lens, aat_curve, marker='o', label=f'prefill {prefill_lens[i]}')
     plt.xlabel("Verify Lengths")
@@ -40,7 +41,7 @@ def fitting3():
     df = pd.read_excel(data_dir, skiprows=2, header=None)
     gammas = df.iloc[:, 0].tolist()
     verify_lens = [gamma + 1 for gamma in gammas]           # 大模型校验时的输入数据长度
-    aat = df.iloc[:, 2].tolist()                            # AAT数据
+    aat = df.iloc[:, 9].tolist()                            # AAT数据
     verify_lens = np.array(verify_lens)
     aat = np.array(aat)
 
@@ -76,6 +77,78 @@ def fitting3():
 
     print(f"RMSE（均方根误差）: {rmse:.4f}")
     print(f"MAE（平均绝对误差）: {mae:.4f}")
+    # x = B_fit/0.02+C_fit
+    # print(x)
+
+
+def draw_fitting():
+    """
+    这里我们挑选几条曲线, 同时绘制原始的AAT和拟合后的曲线, 以展示我们的拟合方法是靠谱的。
+    """
+    data_dir = "./Data/表3-4.xlsx"
+    df = pd.read_excel(data_dir, skiprows=2, header=None)
+    gammas = df.iloc[:, 0].tolist()
+    verify_lens = [gamma + 1 for gamma in gammas]           # 大模型校验时的输入数据长度
+    AATs_all = df.iloc[:, 2:].values.T.tolist()             # AAT数据，存为2D列表
+
+    # 选择要绘制的曲线索引
+    selected_indices = [1, 3, 5, 7]
+    Y_fit = []
+    # 排列4张小图，每张图都绘制原始的AAT曲线和拟合后的曲线
+    for i in selected_indices:
+        aat_curve = AATs_all[i]
+        
+        # 拟合曲线
+        def model_func(x, A, B, C):
+            return A + B * np.log(x - C)
+        
+        # 执行非线性最小二乘拟合
+        initial_guess = [1.0, 1.0, 1.0]
+        params, covariance = curve_fit(model_func, verify_lens, aat_curve, p0=initial_guess)
+        A_fit, B_fit, C_fit = params
+        y_fit = model_func(verify_lens, A_fit, B_fit, C_fit)
+        Y_fit.append(y_fit)  # 保存拟合结果
+        
+    # 第一种绘制方法
+    colors = [(180/255, 199/255, 231/255), (248/255, 203/255, 173/255), (197/255, 224/255, 180/255), (255/255, 230/255, 153/255)]
+    context_lengths = [256, 1024, 4096, 16384]
+    plt.figure(figsize=(12, 8))
+    for i, y_fit in enumerate(Y_fit):
+        plt.plot(verify_lens, AATs_all[selected_indices[i]], linestyle="-", label=f'Original Curve ({context_lengths[i]})', color=colors[i], linewidth=2)
+        plt.plot(verify_lens, y_fit, linestyle="--", label=f'Fitted Curve ({context_lengths[i]})', color=colors[i], linewidth=2)
+    plt.xlabel("Verification Tokens")
+    plt.ylabel("AAT")
+    # plt.title("Selected AAT Curves")
+    plt.legend()
+    plt.grid(True)
+    plt.savefig("./figures/paper/aat_fitting.pdf", bbox_inches='tight', dpi=300)  # 保存图片
+    plt.show()
+
+    # 第二种绘制方法
+    # 创建一个 2x2 的子图网格
+    fig, axes = plt.subplots(2, 2, figsize=(12, 10))
+    titles = ["(Context Length: 256)", "(Context Length: 1024)",
+             "(Context Length: 4096)", "(Context Length: 16384)"]
+    # 遍历每个子图，并在每个子图中绘制相应的曲线
+    for j, ax in enumerate(axes.flat):
+        # j 从 0 到 3，对应 selected_indices 的每组曲线
+        ax.plot(verify_lens, AATs_all[selected_indices[j]], linestyle="-", 
+                label=f'Original Curve', color=colors[j], linewidth=2)
+        ax.plot(verify_lens, Y_fit[j], linestyle="--", 
+                label=f'Fitted Curve', color=colors[j], linewidth=2)
+        ax.set_xlabel("Verification Tokens")
+        ax.set_ylabel("AAT")
+        ax.yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
+        ax.legend()
+        ax.grid(True)
+        # 在每个子图的下方添加标题文字
+        ax.text(0.5, -0.25, titles[j], transform=ax.transAxes,
+                ha='center', va='top', fontsize=22, color='black')
+
+    plt.tight_layout()
+    plt.savefig("./figures/paper/aat_fitting_subplots.pdf", bbox_inches='tight', dpi=300)
+    plt.show()
+
 
 
 def resolve():
@@ -141,4 +214,5 @@ def resolve():
 if __name__ == "__main__":
     # draw_all()
     # fitting3()
-    resolve()
+    draw_fitting()
+    # resolve()

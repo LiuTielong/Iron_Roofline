@@ -3,7 +3,7 @@
 Batch size恒定为1.
 使用的AAT数据来自: ./Data/表3-5.xlsx, ./Data/表3-6.xlsx.
 论文默认配置: total_token=60.
-希望我搜索出来的配置能超过默认配置。
+使用之前请对args的算力和带宽做一定的调整。
 """
 
 import sys
@@ -21,6 +21,8 @@ def main():
     parser.add_argument("--top_k",                  type=int,   default=10,       help="the number of generated tokens per SSM forward process."                  )
     parser.add_argument("--depth",                  type=int,   default=6,        help="the depth of draft token tree - 2."                                       )
     args = parser.parse_args()
+    args.mm_parallel_m = 64*48/128
+    args.hbm_bandwidth = 460
 
     data_dir1 = "./Data/表3-5.xlsx"
     data_dir2 = "./Data/表3-6.xlsx"
@@ -68,6 +70,7 @@ def main():
     draft_depths = df.iloc[:, 1].tolist()                   # draft阶段的深度
     draft_topks = df.iloc[:, 2].tolist()                    # draft阶段的top_k
     AATs_all = df.iloc[:, 3:].values.T.tolist()             # AAT数据，存为2D列表
+    naive_x = [39, 29, 31, 31, 23]
     for i in range(len(prefill_lens)):
         prefill_len = prefill_lens[i]
         AATs = AATs_all[i]
@@ -76,7 +79,7 @@ def main():
         draft_times = []
         args.prompt_len = prefill_len
         args.batch_size = 1
-        for total_token, AAT, depth, top_k in zip(verify_lens, AATs, draft_depths, draft_topks):
+        for total_token, AAT, depth, top_k in zip(verify_lens, AATs, draft_depths, draft_topks): 
             aat = int(AAT)
             args.depth = depth
             args.top_k = top_k
@@ -92,8 +95,8 @@ def main():
         draw_roofline_discount(prefill_lengths=verify_lens, verify_times=verify_times, draft_times=draft_times, 
                             save_path=f"Figures/eagle3_all/tree/{prefill_len}_discounted_roofline_model.png")
         draw_acc(prefill_lengths=verify_lens, accepted_lengths=AATs, save_path=f"Figures/eagle3_all/tree/{prefill_len}_acc.png")
-        draw_combined_model(prefill_lengths=verify_lens, verify_times=verify_times, draft_times=draft_times, 
-                            accepted_lengths=AATs, save_path=f"Figures/eagle3_all/tree/{prefill_len}_combined_model.png", batch_size=1, ori_x=60, naive_x=31)
+        draw_combined_model(verify_lengths=verify_lens, verify_times=verify_times, draft_times=draft_times, 
+                            accepted_lengths=AATs, save_path=f"Figures/eagle3_all/tree/{prefill_len}_combined_model.png", batch_size=1, ori_x=60, naive_x=naive_x[i])
 
 
 if __name__ == "__main__":

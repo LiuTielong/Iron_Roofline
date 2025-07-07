@@ -2,27 +2,42 @@
 这个demo是已知两条曲线的数据, 把它们绘制在一张图中。
 本例是绘制了motivation图。
 """
+import pandas as pd
 
-verify_lengths = [1+1,2+1,3+1,4+1,5+1,6+1,8+1,10+1,12+1,14+1,16+1,18+1,20+1,25+1,30+1,35+1,40+1,45+1,50+1,60+1,70+1,80+1,]
-gpu_speedup = [0.896,1.258,1.369,1.323,1.474,1.487,1.537,1.553,1.652,1.640,1.674,1.758,1.782,1.761,1.737,1.766,1.769,1.812,1.943,1.910,1.958,1.889,]
-fpga_speedup = [ 1.524, 1.903, 1.969, 2.040, 2.144, 2.156, 2.246, 2.244, 2.267, 2.302, 2.313, 2.278, 2.230, 2.172, 1.924, 1.743, 1.555, 1.458, 1.354, 1.181, 1.049, 0.951,]
+data_dir = "D:/PHD/HPCA2025/统一的投机采样研究/两套实验数据/128乘128/表1.xlsx"
+df = pd.read_excel(data_dir, skiprows=1, header=None)
+verify_lengths = df.iloc[:, 0].tolist()     # 第一列是验证长度
+gpu_speedup = df.iloc[:, 1].tolist()        # 第二列是GPU加速比
+fpga_speedup = df.iloc[:, 2].tolist()       # 第三列是FPGA加速比
+aat = df.iloc[:, 3].tolist()                # 平均接受长度
 
 import matplotlib.pyplot as plt
 plt.rcParams['font.size'] = 20  # 设置全局字体大小
 plt.rcParams['font.family'] = 'Times New Roman'
 
 plt.figure(figsize=(10, 6))
-plt.plot(verify_lengths, gpu_speedup, marker='o', linestyle='-', color='r', label='GPU Speedup')
-plt.plot(verify_lengths, fpga_speedup, marker='o', linestyle='-', color='b', label='FPGA Speedup')
-# 下面标注两条曲线的最高点
-plt.annotate(f"GPU: {max(gpu_speedup):.3f}", xy=(verify_lengths[gpu_speedup.index(max(gpu_speedup))], max(gpu_speedup)), 
-             xytext=(5, 5), textcoords='offset points', arrowprops=dict(arrowstyle='->', color='r'), color='r')
-plt.annotate(f"FPGA: {max(fpga_speedup):.3f}", xy=(verify_lengths[fpga_speedup.index(max(fpga_speedup))], max(fpga_speedup)),
-             xytext=(5, -20), textcoords='offset points', arrowprops=dict(arrowstyle='->', color='b'), color='b')
+# 主坐标轴：绘制 GPU 和 FPGA 加速比
+ax = plt.gca()
+ax.plot(verify_lengths, gpu_speedup, linestyle='-', color=(180/255, 199/255, 231/255), label='Speedup On GPU', linewidth=3)
+ax.plot(verify_lengths, fpga_speedup, linestyle='-', color=(248/255, 203/255, 173/255), label='Speedup On FPGA', linewidth=3)
+ax.set_xlabel("Verification Tokens")
+ax.set_ylabel("Speedup")
+ax.grid(True)
 
-plt.xlabel("Verify Lengths")
-plt.ylabel("Speedup")
-plt.title("Speedup Comparison between GPU and FPGA")
-plt.legend()
-plt.grid(True)
+# 在右侧添加一个新的坐标轴，绘制 aat 曲线
+ax2 = ax.twinx()
+ax2.plot(verify_lengths, aat, linestyle='--', color=(197/255, 224/255, 180/255), label='AAT', linewidth=3)
+ax2.set_ylabel("AAT")
+
+# 图例
+lines_1, labels_1 = ax.get_legend_handles_labels()
+lines_2, labels_2 = ax2.get_legend_handles_labels()
+ax.legend(lines_1+lines_2, labels_1+labels_2, 
+          loc='upper center', bbox_to_anchor=(0.5, 1.17), 
+          ncol=3, frameon=True, 
+          columnspacing=1.5, handlelength=2.0, handletextpad=0.5)
+
+plt.tight_layout()
+plt.subplots_adjust(bottom=0.15)  # 将下边距调整为适当的比例
+plt.savefig("./figures/paper/motivation.pdf")
 plt.show()
