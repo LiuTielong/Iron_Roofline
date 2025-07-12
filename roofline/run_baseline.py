@@ -58,6 +58,8 @@ def run_baseline():
 def run_baseline_v2():
     parser = parse_args()
     args = parser.parse_args()
+    args.mm_parallel_m = 128*128/128
+    args.hbm_bandwidth = 77
     
     # 长短文本下的生成, batch_size=1
     args.batch_size = 1
@@ -88,4 +90,5 @@ prefill长度为:16384, perf: 12.32 tokens/s
 值得注意的是: 我这里在变化prefill长度时上下文performance变化也如此大, 是因为
 在load activation的时候, hbm的通道数和通道利用率都要比load weight小很多。
 所以本质上我这里仍然是基于FlightLLM的一个仿真器。
+不论是128*128的阵列还是128*64的阵列, baseline的performance不变。
 """

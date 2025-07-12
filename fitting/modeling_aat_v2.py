@@ -108,27 +108,32 @@ def draw_fitting():
         A_fit, B_fit, C_fit = params
         y_fit = model_func(verify_lens, A_fit, B_fit, C_fit)
         Y_fit.append(y_fit)  # 保存拟合结果
+    
+    # 计算拟合后的决定系数
+    r2_scores = [r2_score(AATs_all[i], Y_fit[j]) for j, i in enumerate(selected_indices)]
+    for j, i in enumerate(selected_indices):
+        print(f"Curve {i+1} R²: {r2_scores[j]:.3f} (Context Length: {verify_lens[i]})")
         
     # 第一种绘制方法
     colors = [(180/255, 199/255, 231/255), (248/255, 203/255, 173/255), (197/255, 224/255, 180/255), (255/255, 230/255, 153/255)]
-    context_lengths = [256, 1024, 4096, 16384]
-    plt.figure(figsize=(12, 8))
-    for i, y_fit in enumerate(Y_fit):
-        plt.plot(verify_lens, AATs_all[selected_indices[i]], linestyle="-", label=f'Original Curve ({context_lengths[i]})', color=colors[i], linewidth=2)
-        plt.plot(verify_lens, y_fit, linestyle="--", label=f'Fitted Curve ({context_lengths[i]})', color=colors[i], linewidth=2)
-    plt.xlabel("Verification Tokens")
-    plt.ylabel("AAT")
-    # plt.title("Selected AAT Curves")
-    plt.legend()
-    plt.grid(True)
-    plt.savefig("./figures/paper/aat_fitting.pdf", bbox_inches='tight', dpi=300)  # 保存图片
-    plt.show()
+    # context_lengths = [256, 1024, 4096, 16384]
+    # plt.figure(figsize=(12, 8))
+    # for i, y_fit in enumerate(Y_fit):
+    #     plt.plot(verify_lens, AATs_all[selected_indices[i]], linestyle="-", label=f'Original Curve ({context_lengths[i]})', color=colors[i], linewidth=2)
+    #     plt.plot(verify_lens, y_fit, linestyle="--", label=f'Fitted Curve ({context_lengths[i]})', color=colors[i], linewidth=2)
+    # plt.xlabel("Verification Tokens")
+    # plt.ylabel("AAT")
+    # # plt.title("Selected AAT Curves")
+    # plt.legend()
+    # plt.grid(True)
+    # plt.savefig("./figures/paper/aat_fitting.pdf", bbox_inches='tight', dpi=300)  # 保存图片
+    # plt.show()
 
     # 第二种绘制方法
     # 创建一个 2x2 的子图网格
     fig, axes = plt.subplots(2, 2, figsize=(12, 10))
-    titles = ["(Context Length: 256)", "(Context Length: 1024)",
-             "(Context Length: 4096)", "(Context Length: 16384)"]
+    titles = ["(a) Context Length=256", "(b) Context Length=1024",
+             "(c) Context Length=4096", "(d) Context Length=16384"]
     # 遍历每个子图，并在每个子图中绘制相应的曲线
     for j, ax in enumerate(axes.flat):
         # j 从 0 到 3，对应 selected_indices 的每组曲线
@@ -136,7 +141,7 @@ def draw_fitting():
                 label=f'Original Curve', color=colors[j], linewidth=2)
         ax.plot(verify_lens, Y_fit[j], linestyle="--", 
                 label=f'Fitted Curve', color=colors[j], linewidth=2)
-        ax.set_xlabel("Verification Tokens")
+        ax.set_xlabel("Verification Length")
         ax.set_ylabel("AAT")
         ax.yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
         ax.legend()
@@ -144,6 +149,8 @@ def draw_fitting():
         # 在每个子图的下方添加标题文字
         ax.text(0.5, -0.25, titles[j], transform=ax.transAxes,
                 ha='center', va='top', fontsize=22, color='black')
+        ax.text(0.3, 0.96, f"R²: {r2_scores[j]:.3f}", transform=ax.transAxes,
+                ha='right', va='top', fontsize=22, color='black')
 
     plt.tight_layout()
     plt.savefig("./figures/paper/aat_fitting_subplots.pdf", bbox_inches='tight', dpi=300)

@@ -27,7 +27,7 @@ AATs_all = df.iloc[:, 1:4].values.T.tolist()             # 三种建树方法的
 colors = [(180/255, 199/255, 231/255), (248/255, 203/255, 173/255), (197/255, 224/255, 180/255)]
 for i, aat_curve in enumerate(AATs_all):
     plt.plot(verify_lens, aat_curve, linestyle='-', label=f'{method_name[i]}', linewidth=3, color=colors[i])
-plt.xlabel("Verify Lengths")
+plt.xlabel("Verification Length")
 plt.ylabel("AAT")
 # plt.title("AAT Curves for Different Methods")
 plt.legend()

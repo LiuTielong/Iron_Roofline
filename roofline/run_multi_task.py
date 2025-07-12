@@ -1,6 +1,7 @@
 """
 我针对llama-3.1-8B模型, 使用longspec算法, 对多个任务的AAT进行测试。在获得AAT曲线之后, 观察这些曲线的AAT有什么相似之处。
 数据来自表5.xlsx. prefill length=1024, generation length=1024.
+记得设置args.mm_parallel_m
 """
 import pandas as pd
 import sys
@@ -40,6 +41,7 @@ parser.add_argument("--avg_accepted_tokens",    type=int,   default=4   ,     he
 parser.add_argument("--gamma",                  type=int,   default=1,        help="it's similar to total_tokens, (depth+1) in eagle algorithm."  )
 parser.add_argument("--tree_shape", nargs="+",  type=int, default=[4, 16, 16, 16, 16], help="the tree shape of the draft token tree." )
 args = parser.parse_args()
+args.mm_parallel_m = 64
 args.batch_size = 1
 args.prompt_len = 1024
 

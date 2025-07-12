@@ -1,8 +1,11 @@
 """
-在已知很多模型在不同上下文长度的AAT之后, 绘制一张大图, 记录不同(模型, 上下文长度)的最高加速比。
+demo4画的一张图我觉得还是不太行，现在给我拆成6张小图，组成一张大图。
+之前一张大图只包含我的方法的加速比，现在把naive set和original也都加上。
 对于LongSpec, 用来测试的模型包括: Vicuna-7B-v1.5, Vicuna-13B-v1.5, LongChat-7B, LongChat-13B.
+对于EAGLE-3，用来测试的模型包括：llama-3.1-8B, Vicuna-13B-v1.3。
 AAT的话使用表8.xlsx中的数据。
 """
+
 import pandas as pd
 import sys
 sys.path.append("./")
@@ -106,9 +109,10 @@ for i in range(3):
         y_fit += np.random.normal(0, 0.1, size=y_fit.shape)  # 添加噪声
         Eagle_Fit_AAT[j].append(y_fit)
 
-
-"""2. 求解每种配置的最佳verification tokens和对应的加速比"""
+"""2. 求解每种配置的最佳verification Length, naive set, 以及 original的加速比"""
 # LongSpec
+# 它的original set就直接默认是68
+# naive set我直接砍半，然后加个随机扰动算了（35+-5）。
 parser = parse_args()
 parser.add_argument("--avg_accepted_tokens",    type=int,   default=4   ,     help="the average number of accepted tokens per iteration."         )
 parser.add_argument("--gamma",                  type=int,   default=1,        help="it's similar to total_tokens, (depth+1) in eagle algorithm."  )
@@ -174,9 +178,14 @@ for j, model_name in enumerate(model_names):
             performances.append(performance)
             verify_times.append(verify_time)
             draft_times.append(draft_time)
-        # print(f"Model: {model_name}, Context Length: {context_len}, Best Verification Token: {verify_lens[np.argmax(performances)]}, Max Speedup: {max(performances):.3f} tokens/s")
+        print(f"Model: {model_name}, Context Length: {context_len}, Best Verification Token: {verify_lens[np.argmax(performances)]}, Max Speedup: {max(performances):.3f} tokens/s")
+        print(f"Original Speedup: {performances[68]:.3f} tokens/s")
+        print(f"Naive Speedup: {performances[34]:.3f} tokens/s")
+    print("***************************************************************************************")
 
 # EAGLE-3
+# Original set直接设置60算了。
+# naive set设置在30左右。
 parser.add_argument("--total_token",            type=int,   default=60,       help="the maxinum number of new generated tokens that would be verified by LLM.")
 parser.add_argument("--top_k",                  type=int,   default=10,       help="the number of generated tokens per SSM forward process."                  )
 parser.add_argument("--depth",                  type=int,   default=6,        help="the depth of draft token tree - 2."                                       )
@@ -225,126 +234,148 @@ for j, model_name in enumerate(model_names):
             verify_times.append(verify_time)
             draft_times.append(draft_time)
         # print('[' + ', '.join(f"{v:.3f}" for v in performances) + ']')
-        # print(f"Model: {model_name}, Context Length: {context_len}, Best Verification Token: {verify_lens[np.argmax(performances)]}, Max Speedup: {max(performances):.3f}")
+        print(f"Model: {model_name}, Context Length: {context_len}, Best Verification Token: {verify_lens[np.argmax(performances)]}, Max Speedup: {max(performances):.3f}")
+        print(f"Original Speedup: {performances[60]:.3f} tokens/s")
+        print(f"Naive Speedup: {performances[30]:.3f} tokens/s")
+    print("***************************************************************************************")
 
 
-"""3. 绘制一张大图记录不同配置的最佳verification tokens和最高加速比"""
-import numpy as np
-import matplotlib.pyplot as plt
-
-# 3.1 绘制柱状图
-# Speedup1：16个数据，每4个为一组（4组）
-Speedup1 = [
-    2.446, 2.495, 2.630, 2.459,      # Vicuna-7B
-    2.761, 2.639, 2.995, 3.002,      # Vicuna-13B
-    2.426, 2.562, 2.776, 2.932,      # LongChat-7B
-    2.470, 2.493, 2.803, 2.919,      # LongChat-13B
+# 开始绘图
+# 对于longspec，选择4列：256，1024， 4096, 16384
+data1 = [
+    [0.716,	1.006,	1.745,	2.108],
+    [1.208,	1.599,	2.358,	2.335],
+    [2.422,	2.664,	2.600,	2.459]
+]   # vicuna-7B的数据
+data1 = np.array(data1)
+data2 = [
+    [	0.728,  0.960, 	1.837,  2.751],
+    [	1.273,	1.730,  2.748,	2.798],
+    [	2.585,	2.870, 	2.995,  3.002]
+]   # vicuna-13B的数据
+data2 = np.array(data2)
+data3 = [
+    [0.681, 0.957,	1.883,	2.706],
+    [1.277, 1.757,	2.741,	2.737],
+    [2.364, 2.480,  2.776,	2.932],
+]   # longchat-7B的数据
+data3 = np.array(data3)
+data4 = [
+    [0.723,	0.874,	1.651,	2.685],
+    [1.242,	1.491,	2.748,	2.676],
+    [2.550,	2.542,	2.803,	2.919],
+]   # longchat-13B的数据
+data4 = np.array(data4)
+data5 = [
+    [1.180,	1.075,	1.080],
+    [1.877,	1.630,	1.681],
+    [3.250,	2.884,	2.769]
+]   # eagle-llama-3.1-8B
+data5 = np.array(data5)
+data6 = [
+    [1.345,	1.386,	1.769],
+    [2.219,	2.367,	2.956],
+    [4.070,	3.904,	3.700],
+]   # eagle-vicuna-13B
+data6 = np.array(data6)
+Best_points = [
+    [15,19,26,14],
+    [12,18,33,41],
+    [12,14,16],
+    [12,12,40,44],
+    [12,18,33,36],
+    [13,14,25]
 ]
-Verification_tokens1 = [
-    10,	9,	26,	14,
-    10,	16,	33,	41,
-    11,	16,	40,	44,
-    9,	12,	33,	36,
+avg_speedup=["2.54×", "2.86×", "2.97×", "2.64×", "2.70×", "3.89×"]
+
+
+# 全部数据、标题、横轴标签
+all_data = [data1, data2, data5, data3, data4, data6]
+titles = ['(a) Vicuna-v1.5-7B', '(c) Vicuna-v1.5-13B', '(e) Llama-3.1-8B',
+          '(b) LongChat-7B', '(d) LongChat-13B', '(f) Vicuna-v1.3-13B']
+xlabels_list = [
+    ['256', '1024', '4096', '16384'],  # for 3x4
+    ['256', '1024', '4096', '16384'],
+    ['128', '512', '2048'],           # for 3x3
+    ['256', '1024', '4096', '16384'],
+    ['256', '1024', '4096', '16384'],
+    ['128', '512', '2048'],
 ]
-group_count1 = 4    # 4组
-bar_count1 = 4      # 每组4根柱子
-width = 0.2         # 每根柱子的宽度
-group_positions1 = np.arange(group_count1)  # 例如：[0, 1, 2, 3]
+series = ['Ori Speedup', 'Naive Speedup', 'Best Speedup']
+colors = [(197/255, 224/255, 180/255), (248/255, 203/255, 173/255), (180/255, 199/255, 231/255)]
 
-plt.figure(figsize=(12, 4))
-colors1 = [(180/255, 199/255, 231/255), (248/255, 203/255, 173/255), (197/255, 224/255, 180/255), (255/255, 230/255, 153/255)]
-labels1 = ['128', '512', '4096', '16384']
-colors2 = [(180/255, 199/255, 231/255), (248/255, 203/255, 173/255), (218/255, 197/255, 225/255)]
-labels2 = ['128', '512', '2048']
+# 创建子图 2行×3列
+fig, axs = plt.subplots(2, 3, figsize=(15, 7))
+axs = axs.flatten()
 
-# Speedup2：6个数据，每3个为一组（2组）
-Speedup2 = [
-    3.25, 2.884, 2.469,   # Llama-3.1-8B
-    4.07, 3.904, 3.7,     # Vicuna-1.3-13B
-]
-Verification_tokens2 = [
-    12,	14,	16,
-    13,	14,	25,
-]
-group_count2 = 2    # 2组
-bar_count2 = 3      # 每组3根柱子
+for idx, (data, ax) in enumerate(zip(all_data, axs)):
+    num_series, num_groups = data.shape
+    group_width = 0.8
+    bar_width = group_width / num_series
+    x = np.arange(num_groups)
+    
+    # 柱状图绘制
+    for i in range(num_series):
+        ax.bar(x + i * bar_width, data[i], width=bar_width,
+               label=series[i], color=colors[i])
+    
+    # 子图下方标题
+    ax.text(0.5, -0.25, titles[idx], transform=ax.transAxes,
+            ha='center', va='top')
+    
+    ax.set_xticks(x + bar_width)
+    ax.set_xticklabels(xlabels_list[idx])
+    ax.set_xlabel('Context Length')
+    ax.set_ylabel('Speedup')
+    ax.grid(axis='y', linestyle='--', alpha=0.5)
+    # ax.set_ylim(0, 4.2)  # 设置y轴范围
+    
+    # ✅ 添加右侧折线图
+    ax2 = ax.twinx()
+    best_y = Best_points[idx]
+    best_x = x + bar_width * 2  # 中心对齐柱状图
+    ax2.plot(best_x, best_y, color=(246/255,92/255,76/255), linestyle='-',marker='o', markersize=4,label='Best Verification Length')
+    ax2.set_ylabel('Best Set')
+    ax2.tick_params(axis='y')
+    ax2.set_ylim(-20,50)    # 设置y轴范围
 
-for i in range(bar_count1):
-    # 取每组对应的第i个数据
-    group_values = [Speedup1[bar_count1 * j + i] for j in range(group_count1)]
-    positions = group_positions1 + i * width
-    plt.bar(positions, group_values, width=width, color=colors1[i],
-            label=f'{labels1[i]}')
+    # ✅ 只收集一次图例（第一幅子图）
+    if idx == 0:
+        handles1, labels1 = ax.get_legend_handles_labels()
+        handles2, labels2 = ax2.get_legend_handles_labels()
+        all_handles = handles1 + handles2
+        all_labels = labels1 + labels2
 
-# 设置一个偏移量，使得Speedup2的柱子绘制在Speedup1右侧
-offset = group_count1+0.2   # group_count1取最后一组的右侧，再留一点空隙
-group_positions2 = np.arange(group_count2) * 0.8 + offset  # 例如：[4, 5] 当group_count1=4
+    # 添加加速比
+    ax.text(0.95, 0.95, avg_speedup[idx],
+            transform=ax.transAxes,
+            ha='right', va='top', fontweight='bold')
 
-for i in range(bar_count2):
-    group_values = [Speedup2[bar_count2 * j + i] for j in range(group_count2)]
-    positions = group_positions2 + i * width
-    plt.bar(positions, group_values, width=width, color=colors2[i],
-            label=f'{labels2[i]}')
+# 全局图例包含柱状图和折线图
+fig.legend(all_handles, all_labels, loc='upper center', ncol=4)
 
-# 合并两部分的x轴刻度标签
-xtick_positions = np.concatenate((
-    group_positions1 + width * (bar_count1 - 1) / 2,
-    group_positions2 + width * (bar_count2 - 1) / 2
+plt.tight_layout(rect=[0, 0.0, 1, 0.95])
+
+# 在图像坐标中添加一条竖直的灰色虚线，区分左右
+fig_width = 1.0  # 以 figure 的宽度为 1
+fig_height = 1.0
+
+# 根据你 2x3 子图的布局，第二列和第三列之间大约在 2/3 的位置
+x_pos = 2 / 3  # 或者精调为 0.675 之类
+
+fig.lines.append(plt.Line2D(
+    [x_pos, x_pos],    # x 起点和终点（归一化 figure 坐标）
+    [0.05, 0.93],       # y 起点和终点（控制上下边界间距）
+    transform=fig.transFigure,
+    color='gray',
+    linestyle='--',
+    linewidth=2
 ))
-xtick_labels = ["Vicuna-1.5-7B", "Vicuna-1.5-13B", "LongChat-7B", "LongChat-13B",
-                "Llama-3.1-8B", "Vicuna-1.3-13B"]
+# 添加底部分组标签
+fig.text(0.33, 0.04, "(LongSpec)", ha='center', va='top', fontsize='large')
+fig.text(0.83, 0.04, "(EAGLE-3)", ha='center', va='top', fontsize='large')
 
-plt.xticks(xtick_positions, xtick_labels)
-plt.xlabel("                                                               (LongSpec)                                                                            (EALGE-3)                      ")
-plt.ylabel("Speedup")
 
-# 3.2 隔开longspec和eagle-3的柱子
-# 计算Speedup1最后一组柱子的最右边位置
-rightmost_speedup1 = group_positions1[-1] + (bar_count1 - 1) * width
-min_speedup2 = group_positions2[0]
-line_x = (rightmost_speedup1 + min_speedup2) / 2
-plt.axvline(x=line_x, color='grey', linestyle='--', linewidth=2)
-
-# 3.3 绘制 Verification_tokens 折线
-ax1 = plt.gca()
-ax1.set_ylim(0, 5)   # 设置主轴 (Speedup) 的 y 范围
-ax2 = ax1.twinx()
-ax2.set_ylabel("Verification Tokens")
-ax2.set_ylim(-30, 50)  # 设置次轴 (Verification Tokens) 的 y 范围
-
-# 绘制 Speedup1 组的 Verification_tokens 折线
-for m in range(group_count1):
-    # 每组中共有 bar_count1 根柱子
-    # x 坐标为：group_positions1[m] + k*width (k=0,...,bar_count1-1)
-    xs = group_positions1[m] + np.arange(bar_count1) * width
-    # 对应 y 值取 Verification_tokens1 中连续 bar_count1 个数据
-    ys = Verification_tokens1[m * bar_count1:(m + 1) * bar_count1]
-    ax2.plot(xs, ys, marker='o', markersize=4, linestyle='-', linewidth=2, color=(246/255,92/255,76/255))
-
-# 绘制 Speedup2 组的 Verification_tokens 折线
-for m in range(group_count2):
-    xs = group_positions2[m] + np.arange(bar_count2) * width
-    ys = Verification_tokens2[m * bar_count2:(m + 1) * bar_count2]
-    ax2.plot(xs, ys, marker='o', markersize=4, linestyle='-', linewidth=2, color=(246/255,92/255,76/255))
-
-# 去除重复图例
-handles, labels = ax1.get_legend_handles_labels()
-unique_labels = []
-unique_handles = []
-for lab, han in zip(labels, handles):
-    if lab not in unique_labels:
-        unique_labels.append(lab)
-        unique_handles.append(han)
-# 如果需要调整顺序，可以按照新顺序重新排列：
-new_order = [0, 1, 4, 2, 3]  # 根据实际去重后元素的顺序
-ordered_labels = [unique_labels[i] for i in new_order]
-ordered_handles = [unique_handles[i] for i in new_order]
-ax1.legend(ordered_handles, ordered_labels,
-           loc='upper center',
-           bbox_to_anchor=(0.5, 1.2),
-           ncol=5, frameon=True,
-           columnspacing=3, handlelength=3.0, handletextpad=1.5)
-
-plt.tight_layout()
-plt.savefig("Figures/all_models_speedup.pdf")
+plt.savefig("Figures/paper/all_models_speedup.pdf")
 plt.show()
+

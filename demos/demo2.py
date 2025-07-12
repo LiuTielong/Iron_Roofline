@@ -12,7 +12,7 @@ fpga_speedup = df.iloc[:, 2].tolist()       # 第三列是FPGA加速比
 aat = df.iloc[:, 3].tolist()                # 平均接受长度
 
 import matplotlib.pyplot as plt
-plt.rcParams['font.size'] = 20  # 设置全局字体大小
+plt.rcParams['font.size'] = 22  # 设置全局字体大小
 plt.rcParams['font.family'] = 'Times New Roman'
 
 plt.figure(figsize=(10, 6))
@@ -20,7 +20,7 @@ plt.figure(figsize=(10, 6))
 ax = plt.gca()
 ax.plot(verify_lengths, gpu_speedup, linestyle='-', color=(180/255, 199/255, 231/255), label='Speedup On GPU', linewidth=3)
 ax.plot(verify_lengths, fpga_speedup, linestyle='-', color=(248/255, 203/255, 173/255), label='Speedup On FPGA', linewidth=3)
-ax.set_xlabel("Verification Tokens")
+ax.set_xlabel("Verification Length")
 ax.set_ylabel("Speedup")
 ax.grid(True)
 
